@@ -289,22 +289,10 @@ body {
   gap: 8px;
 }
 
-.font-info {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
 .font-name {
   font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
-}
-
-.font-weight {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-family: "SF Mono", Menlo, Consolas, monospace;
 }
 
 .font-sample {
@@ -315,11 +303,6 @@ body {
   background: var(--bg-input);
   border-radius: var(--radius-sm);
   font-style: italic;
-}
-
-.font-sizes {
-  display: flex;
-  gap: 6px;
 }
 
 .size-tag {
@@ -379,45 +362,6 @@ body {
 
 .segment-control[data-active="0"] .segment-slider { transform: translateX(0); }
 .segment-control[data-active="1"] .segment-slider { transform: translateX(calc(100% + 2px)); }
-
-/* ── Select Dropdown ─────────────────────────────────────── */
-.select-wrapper {
-  position: relative;
-}
-
-.select-wrapper select {
-  width: 100%;
-  padding: 9px 36px 9px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  appearance: none;
-  cursor: pointer;
-  transition: all var(--transition);
-  font-family: inherit;
-}
-
-.select-wrapper select:hover {
-  border-color: var(--border-focus);
-}
-
-.select-wrapper select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-.select-chevron {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
-}
 
 /* ── Buttons ─────────────────────────────────────────────── */
 .actions {
@@ -506,21 +450,6 @@ body {
   border-color: var(--border-focus);
 }
 
-.btn-accent {
-  flex: 1;
-  background: linear-gradient(135deg, #0984E3, #6C5CE7);
-  color: #fff;
-}
-
-.btn-accent:hover {
-  box-shadow: 0 4px 16px rgba(9, 132, 227, 0.3);
-  transform: translateY(-1px);
-}
-
-.btn-accent:active {
-  transform: translateY(0) scale(0.97);
-}
-
 .btn-secondary.success,
 .btn-primary.success {
   background: var(--success-bg) !important;
@@ -590,6 +519,68 @@ body {
   color: #ff4757;
 }
 
+/* ── Settings extras ────────────────────────────────────── */
+.settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setting-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.model-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.model-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--text-secondary);
+}
+
+.model-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.model-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--text-primary);
+}
+
+.model-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.model-desc {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
 /* ── Prompt output ───────────────────────────────────────── */
 #promptCard {
   display: none;
@@ -645,6 +636,26 @@ body {
   border: 1px solid rgba(255, 71, 87, 0.15);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.btn-retry {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 5px 12px;
+  background: rgba(255, 71, 87, 0.12);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.25);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-retry:hover {
+  background: rgba(255, 71, 87, 0.2);
 }
 
 .history-item.has-prompt .hist-title::after {
@@ -780,6 +791,21 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.history-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 2px;
 }
 
 .history-item {
@@ -876,6 +902,25 @@ body {
   color: var(--text-muted);
 }
 
+.hist-model {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.hist-model--vision {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
 .btn-clear-history {
   margin-top: 4px;
   justify-content: center;
@@ -892,10 +937,6 @@ body {
   padding-top: 4px;
   font-size: 10px;
   color: var(--text-muted);
-}
-
-.footer-sep {
-  opacity: 0.4;
 }
 
 /* ── Toast ───────────────────────────────────────────────── */

@@ -43,13 +43,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const apiKeyInput = document.getElementById("apiKeyInput")
   const apiKeyStatus = document.getElementById("apiKeyStatus")
 
-  chrome.storage.local.get({ openaiKey: "" }, (result) => {
-    if (result.openaiKey) {
-      apiKeyInput.value = result.openaiKey
-      apiKeyStatus.textContent = "Key saved"
-      apiKeyStatus.className = "api-key-status saved"
-    }
-  })
+  chrome.storage.local.get(
+    { openaiKey: "", aiModel: "gpt-4o-mini" },
+    (result) => {
+      if (result.openaiKey) {
+        apiKeyInput.value = result.openaiKey
+        apiKeyStatus.textContent = "Key saved"
+        apiKeyStatus.className = "api-key-status saved"
+      }
+      document.querySelectorAll("#modelSelector .model-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.model === result.aiModel)
+      })
+    },
+  )
 
   settingsBtn.addEventListener("click", () => {
     settingsCard.classList.toggle("hidden")
@@ -66,7 +72,19 @@ document.addEventListener("DOMContentLoaded", () => {
       apiKeyStatus.textContent = "Key saved"
       apiKeyStatus.className = "api-key-status saved"
       toast("API key saved")
-      setTimeout(() => settingsCard.classList.add("hidden"), 800)
+    })
+  })
+
+  document.querySelectorAll("#modelSelector .model-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document
+        .querySelectorAll("#modelSelector .model-btn")
+        .forEach((b) => b.classList.remove("active"))
+      btn.classList.add("active")
+      chrome.storage.local.set({ aiModel: btn.dataset.model })
+      const label =
+        btn.dataset.model === "gpt-4o" ? "GPT-4o + vision" : "GPT-4o mini"
+      toast(`Model: ${label}`)
     })
   })
 
@@ -112,7 +130,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderResults(data) {
     renderColors(data.colors || [])
     renderTypography(data.typography || {})
-    renderLayout(data.layout || {}, data.components || [], data.interactions || [])
+    renderLayout(
+      data.layout || {},
+      data.components || [],
+      data.interactions || [],
+    )
     const resultsEl = document.getElementById("results")
     resultsEl.classList.remove("hidden")
     resultsEl.classList.add("visible")
@@ -120,7 +142,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderColors(colors) {
     const container = document.getElementById("colorPalette")
-    const unique = [...new Set(colors)].filter((c) => c && c !== "rgba(0, 0, 0, 0)" && c !== "#rgba(0, 0, 0, 0)")
+    const unique = [...new Set(colors)].filter(
+      (c) => c && c !== "rgba(0, 0, 0, 0)" && c !== "#rgba(0, 0, 0, 0)",
+    )
     if (unique.length === 0) {
       container.innerHTML = '<span class="no-data">No colors detected</span>'
       return
@@ -159,7 +183,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const body = typo.bodyText?.[0]
 
     if (!heading && !body) {
-      container.innerHTML = '<span class="no-data">No typography detected</span>'
+      container.innerHTML =
+        '<span class="no-data">No typography detected</span>'
       return
     }
 
@@ -202,10 +227,13 @@ document.addEventListener("DOMContentLoaded", () => {
     interactions.forEach((i) => tags.push(i))
 
     if (tags.length === 0) {
-      container.innerHTML = '<span class="no-data">No layout info detected</span>'
+      container.innerHTML =
+        '<span class="no-data">No layout info detected</span>'
       return
     }
-    container.innerHTML = tags.map((t) => `<span class="tag">${t}</span>`).join("")
+    container.innerHTML = tags
+      .map((t) => `<span class="tag">${t}</span>`)
+      .join("")
   }
 
   // ── Prompt output rendering ───────────────────────────────
@@ -227,9 +255,17 @@ document.addEventListener("DOMContentLoaded", () => {
     el.innerHTML = `<div class="prompt-text">${escapeHtml(text)}</div>`
   }
 
-  function showPromptError(msg) {
+  function showPromptError(msg, retryData, retryDone) {
     const el = document.getElementById("promptOutput")
-    el.innerHTML = `<div class="prompt-error">${escapeHtml(msg)}</div>`
+    document.getElementById("promptCard").style.display = ""
+    const retryBtn = retryData
+      ? `<button class="btn btn-small btn-retry">Retry</button>`
+      : ""
+    el.innerHTML = `<div class="prompt-error">${escapeHtml(msg)}${retryBtn}</div>`
+    const btn = el.querySelector(".btn-retry")
+    if (btn && retryData) {
+      btn.addEventListener("click", () => generatePrompt(retryData, retryDone))
+    }
   }
 
   function escapeHtml(str) {
@@ -238,42 +274,66 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML
   }
 
+  // ── Capture screenshot ──────────────────────────────────
+  function captureScreenshot() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get({ aiModel: "gpt-4o-mini" }, (result) => {
+        if (result.aiModel !== "gpt-4o") {
+          resolve(null)
+          return
+        }
+        chrome.tabs.captureVisibleTab(
+          null,
+          { format: "jpeg", quality: 70 },
+          (dataUrl) => {
+            if (chrome.runtime.lastError) {
+              console.warn(
+                "Screenshot failed:",
+                chrome.runtime.lastError.message,
+              )
+              resolve(null)
+              return
+            }
+            resolve(dataUrl)
+          },
+        )
+      })
+    })
+  }
+
   // ── Call OpenAI via background script ─────────────────────
   function generatePrompt(designData, onDone) {
-    chrome.storage.local.get({ openaiKey: "" }, (result) => {
-      if (!result.openaiKey) {
-        showPromptError("No API key — open Settings (gear icon) to add your OpenAI key")
-        document.getElementById("promptCard").style.display = ""
-        if (onDone) onDone()
-        return
-      }
+    showPromptLoading()
 
-      showPromptLoading()
+    captureScreenshot().then((screenshot) => {
+      const msg = { action: "generatePrompt", designData }
+      if (screenshot) msg.screenshot = screenshot
 
-      chrome.runtime.sendMessage(
-        { action: "generatePrompt", designData, apiKey: result.openaiKey },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            showPromptError("Failed to reach background service")
-            if (onDone) onDone()
-            return
-          }
-          if (response.success) {
-            showPromptResult(response.prompt)
-            copyBtn.disabled = false
-            toast("Prompt generated!")
-          } else {
-            showPromptError(response.error || "Unknown error")
-            toast("Prompt generation failed")
-          }
+      chrome.runtime.sendMessage(msg, (response) => {
+        if (chrome.runtime.lastError) {
+          showPromptError(
+            "Failed to reach background service",
+            designData,
+            onDone,
+          )
           if (onDone) onDone()
-        },
-      )
+          return
+        }
+        if (response.success) {
+          showPromptResult(response.prompt)
+          copyBtn.disabled = false
+          toast("Prompt generated!")
+        } else {
+          showPromptError(response.error || "Unknown error", designData, onDone)
+          toast("Prompt generation failed")
+        }
+        if (onDone) onDone()
+      })
     })
   }
 
   // ── Storage helpers (chrome.storage.local) ────────────────
-  function saveToHistory(data, prompt) {
+  function saveToHistory(data, prompt, model) {
     const entry = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
@@ -281,6 +341,7 @@ document.addEventListener("DOMContentLoaded", () => {
       title: data.title,
       favicon: document.getElementById("favicon").src || "",
       prompt: prompt || "",
+      model: model || "",
       data,
     }
 
@@ -327,6 +388,9 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("")
           const domain = getDomain(entry.url)
           const hasPrompt = entry.prompt ? "has-prompt" : ""
+          const modelBadge = entry.model
+            ? `<span class="hist-model ${entry.model === "gpt-4o" ? "hist-model--vision" : ""}">${entry.model === "gpt-4o" ? "4o" : "mini"}</span>`
+            : ""
 
           return `
           <div class="history-item ${hasPrompt}" data-id="${entry.id}">
@@ -336,6 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="hist-title">${escapeHtml(entry.title || domain)}</div>
                 <div class="hist-url">${escapeHtml(domain)}</div>
               </div>
+              ${modelBadge}
               <button class="hist-delete" data-id="${entry.id}" title="Remove">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -437,7 +502,9 @@ document.addEventListener("DOMContentLoaded", () => {
         statusText.textContent = "Generating prompt…"
 
         generatePrompt(response, () => {
-          saveToHistory(response, lastPrompt)
+          chrome.storage.local.get({ aiModel: "gpt-4o-mini" }, (r) => {
+            saveToHistory(response, lastPrompt, r.aiModel)
+          })
 
           genBtn.classList.remove("loading")
           genBtn.classList.add("success")
@@ -502,11 +569,5 @@ document.addEventListener("DOMContentLoaded", () => {
         copyBtn.innerHTML = orig
       }, 1800)
     })
-  })
-
-  // ── Open in v0 ────────────────────────────────────────────
-  document.getElementById("btnOpen").addEventListener("click", () => {
-    toast("Opening v0…")
-    setTimeout(() => window.open("https://v0.dev", "_blank"), 400)
   })
 })
