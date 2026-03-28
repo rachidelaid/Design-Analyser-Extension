@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ── Tabs ────────────────────────
+  const tabs = document.getElementById("tabs")
   const tabsBtns = tabs.querySelectorAll(".segment-btn")
   tabs.setAttribute("data-active", "0")
 
@@ -85,25 +86,70 @@ document.addEventListener("DOMContentLoaded", () => {
       </svg>
       Analyzing…`
 
-    setTimeout(() => {
-      genBtn.classList.remove("loading")
-      genBtn.classList.add("success")
-      genBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        Prompt Ready`
-      toast("Prompt generated!")
+    chrome.tabs.query({ active: true, currentWindow: true }, (activeTabs) => {
+      const tabId = activeTabs[0].id
 
-      setTimeout(() => {
-        genBtn.classList.remove("success")
+      function handleResponse(response) {
+        console.log("Design data:", response)
+
+        genBtn.classList.remove("loading")
+        genBtn.classList.add("success")
+        genBtn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Analysis Complete`
+        toast("Design data extracted!")
+
+        setTimeout(() => {
+          genBtn.classList.remove("success")
+          genBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Start Analysis`
+        }, 2200)
+      }
+
+      function handleError(err) {
+        console.error("Analysis error:", err)
+        genBtn.classList.remove("loading")
         genBtn.innerHTML = `
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
-          Generate Prompt`
-      }, 2200)
-    }, 1600)
+          Start Analysis`
+        toast("Error — cannot analyze this page")
+      }
+
+      function sendExtractMessage() {
+        chrome.tabs.sendMessage(tabId, { action: "extractDesign" }, (response) => {
+          if (chrome.runtime.lastError) {
+            handleError(chrome.runtime.lastError.message)
+            return
+          }
+          handleResponse(response)
+        })
+      }
+
+      // Try sending directly first; if content script isn't loaded, inject it then retry
+      chrome.tabs.sendMessage(tabId, { action: "ping" }, (response) => {
+        if (chrome.runtime.lastError) {
+          chrome.scripting.executeScript(
+            { target: { tabId }, files: ["content.js"] },
+            () => {
+              if (chrome.runtime.lastError) {
+                handleError(chrome.runtime.lastError.message)
+                return
+              }
+              sendExtractMessage()
+            },
+          )
+        } else {
+          sendExtractMessage()
+        }
+      })
+    })
   })
 
   // ── Copy button ───────────────────────────────────────────
@@ -130,13 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Open in platform ──────────────────────────────────────
   const openBtn = document.getElementById("btnOpen")
   openBtn.addEventListener("click", () => {
-    const urls = {
-      v0: "https://v0.dev",
-      bolt: "https://bolt.new",
-      cursor: "https://cursor.sh",
-    }
-    const target = urls[platformSel.value] || urls.v0
-    toast(`Opening ${platformSel.value}…`)
-    setTimeout(() => window.open(target, "_blank"), 400)
+    toast("Opening v0…")
+    setTimeout(() => window.open("https://v0.dev", "_blank"), 400)
   })
 })
