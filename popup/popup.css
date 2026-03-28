@@ -529,6 +529,136 @@ body {
   box-shadow: none !important;
 }
 
+/* ── Settings card ───────────────────────────────────────── */
+.settings-card {
+  transition: all var(--transition);
+}
+
+.settings-card.hidden {
+  display: none;
+}
+
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.api-key-row {
+  display: flex;
+  gap: 6px;
+}
+
+.input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: all var(--transition);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.btn-small {
+  padding: 7px 14px;
+  font-size: 12px;
+  flex: none;
+}
+
+.api-key-status {
+  font-size: 11px;
+  margin-top: 6px;
+  min-height: 15px;
+}
+
+.api-key-status.saved {
+  color: var(--success-text);
+}
+
+.api-key-status.error {
+  color: #ff4757;
+}
+
+/* ── Prompt output ───────────────────────────────────────── */
+#promptCard {
+  display: none;
+}
+
+.prompt-output {
+  position: relative;
+}
+
+.prompt-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.prompt-loading .spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+.prompt-text {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.prompt-text::-webkit-scrollbar {
+  width: 4px;
+}
+
+.prompt-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.prompt-text::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 2px;
+}
+
+.prompt-error {
+  font-size: 12px;
+  color: #ff4757;
+  background: rgba(255, 71, 87, 0.08);
+  border: 1px solid rgba(255, 71, 87, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.history-item.has-prompt .hist-title::after {
+  content: "AI";
+  font-size: 9px;
+  font-weight: 700;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  vertical-align: middle;
+}
+
 /* ── Panels (tab content) ────────────────────────────────── */
 .panel {
   display: none;

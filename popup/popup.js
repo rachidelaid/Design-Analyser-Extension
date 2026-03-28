@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const html = document.documentElement
   let lastAnalysis = null
+  let lastPrompt = ""
 
   // ── Toast ─────────────────────────────────────────────────
   const toastEl = document.createElement("div")
@@ -34,6 +35,39 @@ document.addEventListener("DOMContentLoaded", () => {
     const next = html.getAttribute("data-theme") === "dark" ? "light" : "dark"
     html.setAttribute("data-theme", next)
     localStorage.setItem("da-theme", next)
+  })
+
+  // ── Settings toggle ───────────────────────────────────────
+  const settingsBtn = document.getElementById("settingsToggle")
+  const settingsCard = document.getElementById("settingsCard")
+  const apiKeyInput = document.getElementById("apiKeyInput")
+  const apiKeyStatus = document.getElementById("apiKeyStatus")
+
+  chrome.storage.local.get({ openaiKey: "" }, (result) => {
+    if (result.openaiKey) {
+      apiKeyInput.value = result.openaiKey
+      apiKeyStatus.textContent = "Key saved"
+      apiKeyStatus.className = "api-key-status saved"
+    }
+  })
+
+  settingsBtn.addEventListener("click", () => {
+    settingsCard.classList.toggle("hidden")
+  })
+
+  document.getElementById("btnSaveKey").addEventListener("click", () => {
+    const key = apiKeyInput.value.trim()
+    if (!key) {
+      apiKeyStatus.textContent = "Please enter a key"
+      apiKeyStatus.className = "api-key-status error"
+      return
+    }
+    chrome.storage.local.set({ openaiKey: key }, () => {
+      apiKeyStatus.textContent = "Key saved"
+      apiKeyStatus.className = "api-key-status saved"
+      toast("API key saved")
+      setTimeout(() => settingsCard.classList.add("hidden"), 800)
+    })
   })
 
   // ── URL & Favicon ─────────────────────────────────────────
@@ -174,50 +208,85 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = tags.map((t) => `<span class="tag">${t}</span>`).join("")
   }
 
-  // ── Format analysis as copyable text ──────────────────────
-  function formatAnalysisText(data) {
-    const lines = [`Design Analysis: ${data.title}`, `URL: ${data.url}`, ""]
+  // ── Prompt output rendering ───────────────────────────────
+  function showPromptLoading() {
+    const el = document.getElementById("promptOutput")
+    el.innerHTML = `
+      <div class="prompt-loading">
+        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        <span>Generating prompt with OpenAI…</span>
+      </div>`
+    document.getElementById("promptCard").style.display = ""
+  }
 
-    const colors = (data.colors || []).filter((c) => c && c !== "rgba(0, 0, 0, 0)")
-    if (colors.length) lines.push(`Colors: ${colors.join(", ")}`)
+  function showPromptResult(text) {
+    lastPrompt = text
+    const el = document.getElementById("promptOutput")
+    el.innerHTML = `<div class="prompt-text">${escapeHtml(text)}</div>`
+  }
 
-    const h = data.typography?.headings?.[0]
-    const b = data.typography?.bodyText?.[0]
-    if (h) lines.push(`Heading font: ${cleanFontName(h.font)} ${h.size} w${h.weight}`)
-    if (b) lines.push(`Body font: ${cleanFontName(b.font)} ${b.size} w${b.weight}`)
+  function showPromptError(msg) {
+    const el = document.getElementById("promptOutput")
+    el.innerHTML = `<div class="prompt-error">${escapeHtml(msg)}</div>`
+  }
 
-    if (data.layout) {
-      lines.push(`Layout: ${data.layout.type}, ${data.layout.gridSystem}`)
-      if (data.layout.sectionCount) lines.push(`Sections: ${data.layout.sectionCount}`)
-    }
-    if (data.components?.length) lines.push(`Components: ${data.components.join(", ")}`)
-    if (data.interactions?.length) lines.push(`Interactions: ${data.interactions.join(", ")}`)
+  function escapeHtml(str) {
+    const div = document.createElement("div")
+    div.textContent = str
+    return div.innerHTML
+  }
 
-    const vars = data.cssVariables || {}
-    const varEntries = Object.entries(vars)
-    if (varEntries.length) {
-      lines.push("CSS Variables:")
-      varEntries.forEach(([k, v]) => lines.push(`  ${k}: ${v}`))
-    }
+  // ── Call OpenAI via background script ─────────────────────
+  function generatePrompt(designData, onDone) {
+    chrome.storage.local.get({ openaiKey: "" }, (result) => {
+      if (!result.openaiKey) {
+        showPromptError("No API key — open Settings (gear icon) to add your OpenAI key")
+        document.getElementById("promptCard").style.display = ""
+        if (onDone) onDone()
+        return
+      }
 
-    return lines.join("\n")
+      showPromptLoading()
+
+      chrome.runtime.sendMessage(
+        { action: "generatePrompt", designData, apiKey: result.openaiKey },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            showPromptError("Failed to reach background service")
+            if (onDone) onDone()
+            return
+          }
+          if (response.success) {
+            showPromptResult(response.prompt)
+            copyBtn.disabled = false
+            toast("Prompt generated!")
+          } else {
+            showPromptError(response.error || "Unknown error")
+            toast("Prompt generation failed")
+          }
+          if (onDone) onDone()
+        },
+      )
+    })
   }
 
   // ── Storage helpers (chrome.storage.local) ────────────────
-  function saveToHistory(data) {
+  function saveToHistory(data, prompt) {
     const entry = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
       url: data.url,
       title: data.title,
       favicon: document.getElementById("favicon").src || "",
+      prompt: prompt || "",
       data,
     }
 
     chrome.storage.local.get({ history: [] }, (result) => {
       const history = result.history
       history.unshift(entry)
-      // Keep last 50 entries
       if (history.length > 50) history.length = 50
       chrome.storage.local.set({ history })
     })
@@ -257,14 +326,15 @@ document.addEventListener("DOMContentLoaded", () => {
             .map((c) => `<span class="hist-dot" style="background:${c}"></span>`)
             .join("")
           const domain = getDomain(entry.url)
+          const hasPrompt = entry.prompt ? "has-prompt" : ""
 
           return `
-          <div class="history-item" data-id="${entry.id}">
+          <div class="history-item ${hasPrompt}" data-id="${entry.id}">
             <div class="hist-top">
               <img class="hist-favicon" src="${entry.favicon}" alt="">
               <div class="hist-info">
-                <div class="hist-title">${entry.title || domain}</div>
-                <div class="hist-url">${domain}</div>
+                <div class="hist-title">${escapeHtml(entry.title || domain)}</div>
+                <div class="hist-url">${escapeHtml(domain)}</div>
               </div>
               <button class="hist-delete" data-id="${entry.id}" title="Remove">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -280,7 +350,6 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .join("")
 
-      // Delete individual entries
       list.querySelectorAll(".hist-delete").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation()
@@ -293,18 +362,25 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       })
 
-      // Click to load a past analysis into the Analysis panel
       list.querySelectorAll(".history-item").forEach((item) => {
         item.addEventListener("click", () => {
           const id = Number(item.dataset.id)
           const entry = history.find((h) => h.id === id)
           if (entry) {
             lastAnalysis = entry.data
+            lastPrompt = entry.prompt || ""
             renderResults(entry.data)
-            document.getElementById("btnCopy").disabled = false
+
+            if (entry.prompt) {
+              showPromptResult(entry.prompt)
+              document.getElementById("promptCard").style.display = ""
+            } else {
+              document.getElementById("promptCard").style.display = "none"
+            }
+
+            copyBtn.disabled = !entry.prompt
             document.getElementById("pageUrl").textContent = entry.url || ""
-            const favImg = document.getElementById("favicon")
-            favImg.src = entry.favicon || ""
+            document.getElementById("favicon").src = entry.favicon || ""
             tabBtns[0].click()
             toast("Loaded from history")
           }
@@ -333,7 +409,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const genBtn = document.getElementById("btnGenerate")
   const copyBtn = document.getElementById("btnCopy")
   const statusText = document.getElementById("statusText")
-
   const defaultBtnHTML = genBtn.innerHTML
 
   genBtn.addEventListener("click", () => {
@@ -344,6 +419,8 @@ document.addEventListener("DOMContentLoaded", () => {
       </svg>
       Analyzing…`
     statusText.textContent = "Analyzing…"
+    lastPrompt = ""
+    document.getElementById("promptCard").style.display = "none"
 
     chrome.tabs.query({ active: true, currentWindow: true }, (activeTabs) => {
       const tabId = activeTabs[0].id
@@ -351,24 +428,32 @@ document.addEventListener("DOMContentLoaded", () => {
       function onSuccess(response) {
         lastAnalysis = response
         renderResults(response)
-        saveToHistory(response)
 
-        genBtn.classList.remove("loading")
-        genBtn.classList.add("success")
         genBtn.innerHTML = `
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
           </svg>
-          Analysis Complete`
-        copyBtn.disabled = false
-        statusText.textContent = "Analysis complete"
-        toast("Design data extracted!")
+          Generating prompt…`
+        statusText.textContent = "Generating prompt…"
 
-        setTimeout(() => {
-          genBtn.classList.remove("success")
-          genBtn.innerHTML = defaultBtnHTML
-          statusText.textContent = "Ready"
-        }, 2200)
+        generatePrompt(response, () => {
+          saveToHistory(response, lastPrompt)
+
+          genBtn.classList.remove("loading")
+          genBtn.classList.add("success")
+          genBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Done`
+          statusText.textContent = "Prompt ready"
+
+          setTimeout(() => {
+            genBtn.classList.remove("success")
+            genBtn.innerHTML = defaultBtnHTML
+            statusText.textContent = "Ready"
+          }, 2200)
+        })
       }
 
       function onError(err) {
@@ -399,10 +484,10 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   })
 
-  // ── Copy button ───────────────────────────────────────────
+  // ── Copy button — copies the generated prompt ─────────────
   copyBtn.addEventListener("click", () => {
-    if (!lastAnalysis) return
-    const text = formatAnalysisText(lastAnalysis)
+    const text = lastPrompt || ""
+    if (!text) return
     navigator.clipboard.writeText(text).then(() => {
       const orig = copyBtn.innerHTML
       copyBtn.classList.add("success")
@@ -411,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <polyline points="20 6 9 17 4 12"/>
         </svg>
         Copied!`
-      toast("Copied to clipboard")
+      toast("Prompt copied to clipboard")
       setTimeout(() => {
         copyBtn.classList.remove("success")
         copyBtn.innerHTML = orig
