@@ -529,6 +529,230 @@ body {
   box-shadow: none !important;
 }
 
+/* ── Panels (tab content) ────────────────────────────────── */
+.panel {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel.active {
+  display: flex;
+}
+
+/* ── Results section ─────────────────────────────────────── */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.results.hidden {
+  display: none;
+}
+
+.results.visible .card {
+  animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.results.visible .card:nth-child(1) { animation-delay: 0.04s; }
+.results.visible .card:nth-child(2) { animation-delay: 0.1s; }
+.results.visible .card:nth-child(3) { animation-delay: 0.16s; }
+
+.no-data {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  text-align: center;
+  padding: 6px 0;
+}
+
+/* ── Typography rows ─────────────────────────────────────── */
+.typo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  padding: 8px 0;
+}
+
+.typo-row + .typo-row {
+  border-top: 1px solid var(--border);
+}
+
+.typo-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  background: var(--accent-glow);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.font-meta {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Layout tags ─────────────────────────────────────────── */
+.layout-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ── Disabled button ─────────────────────────────────────── */
+.btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ── History panel ───────────────────────────────────────── */
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.history-empty svg {
+  opacity: 0.3;
+  margin-bottom: 4px;
+}
+
+.history-empty span:first-of-type {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-empty-sub {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.history-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-focus);
+}
+
+.hist-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hist-favicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.hist-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hist-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hist-url {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hist-delete {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.hist-delete:hover {
+  background: rgba(255, 71, 87, 0.15);
+  color: #ff4757;
+}
+
+.hist-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.hist-colors {
+  display: flex;
+  gap: 4px;
+}
+
+.hist-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.hist-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.btn-clear-history {
+  margin-top: 4px;
+  justify-content: center;
+  font-size: 11px;
+  padding: 8px;
+}
+
 /* ── Footer ──────────────────────────────────────────────── */
 .footer {
   display: flex;

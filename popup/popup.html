@@ -22,7 +22,7 @@
           <h1>Design Analyzer</h1>
           <div class="status">
             <span class="status-dot"></span>
-            <span class="status-text">Ready</span>
+            <span id="statusText" class="status-text">Ready</span>
           </div>
         </div>
       </div>
@@ -43,89 +43,97 @@
       <div class="segment-slider"></div>
     </div>
 
-    <!-- URL Display -->
-    <div class="card url-card">
-      <div class="card-label">Current Page</div>
-      <div class="url-display">
-        <img id="favicon" class="favicon" src="" alt="">
-        <span id="pageUrl" class="url-text">https://example.com/design</span>
+    <!-- ═══ Analysis Panel ═══ -->
+    <div id="panelAnalysis" class="panel active">
+
+      <!-- URL Display -->
+      <div class="card url-card">
+        <div class="card-label">Page</div>
+        <div class="url-display">
+          <img id="favicon" class="favicon" src="" alt="">
+          <span id="pageUrl" class="url-text">https://example.com</span>
+        </div>
+      </div>
+
+      <!-- Results (hidden until analysis completes) -->
+      <div id="results" class="results hidden">
+
+        <!-- Color Palette -->
+        <div class="card" id="colorCard">
+          <div class="card-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/>
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+            </svg>
+            Color Palette
+          </div>
+          <div id="colorPalette" class="color-palette"></div>
+        </div>
+
+        <!-- Typography -->
+        <div class="card" id="typoCard">
+          <div class="card-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+            </svg>
+            Typography
+          </div>
+          <div id="typographyPreview" class="typography-preview"></div>
+        </div>
+
+        <!-- Layout & Components -->
+        <div class="card" id="layoutCard">
+          <div class="card-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+            Layout &amp; Components
+          </div>
+          <div id="layoutInfo" class="layout-info"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button id="btnGenerate" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          Start Analysis
+        </button>
+        <div class="btn-row">
+          <button id="btnCopy" class="btn btn-secondary" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+          <button id="btnOpen" class="btn btn-accent">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            Open in v0
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Color Palette -->
-    <!-- <div class="card">
-      <div class="card-label">
+    <!-- ═══ History Panel ═══ -->
+    <div id="panelHistory" class="panel">
+      <div id="historyEmpty" class="history-empty">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>No analyses yet</span>
+        <span class="history-empty-sub">Results will appear here after you run an analysis</span>
+      </div>
+      <div id="historyList" class="history-list"></div>
+      <button id="btnClearHistory" class="btn btn-secondary btn-clear-history" style="display:none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/>
-          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
-        Color Palette
-      </div>
-      <div class="color-palette">
-        <div class="color-swatch" data-color="#6C5CE7">
-          <div class="swatch-fill" style="background: #6C5CE7"></div>
-          <span class="swatch-label">#6C5CE7</span>
-        </div>
-        <div class="color-swatch" data-color="#00B894">
-          <div class="swatch-fill" style="background: #00B894"></div>
-          <span class="swatch-label">#00B894</span>
-        </div>
-        <div class="color-swatch" data-color="#FD79A8">
-          <div class="swatch-fill" style="background: #FD79A8"></div>
-          <span class="swatch-label">#FD79A8</span>
-        </div>
-        <div class="color-swatch" data-color="#0984E3">
-          <div class="swatch-fill" style="background: #0984E3"></div>
-          <span class="swatch-label">#0984E3</span>
-        </div>
-      </div>
-    </div> -->
-
-    <!-- Typography -->
-    <!-- <div class="card">
-      <div class="card-label">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
-        </svg>
-        Typography
-      </div>
-      <div class="typography-preview">
-        <div class="font-info">
-          <span class="font-name">Inter</span>
-          <span class="font-weight">400 / 600 / 700</span>
-        </div>
-        <div class="font-sample">The quick brown fox jumps over the lazy dog</div>
-        <div class="font-sizes">
-          <span class="size-tag">14px</span>
-          <span class="size-tag">16px</span>
-          <span class="size-tag">24px</span>
-          <span class="size-tag">32px</span>
-        </div>
-      </div>
-    </div> -->
-
-    <!-- Action Buttons -->
-    <div class="actions">
-      <button id="btnGenerate" class="btn btn-primary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
-        Start Analysis
+        Clear History
       </button>
-      <div class="btn-row">
-        <button id="btnCopy" class="btn btn-secondary">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          Copy
-        </button>
-        <button id="btnOpen" class="btn btn-accent">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-          Open in v0
-        </button>
-      </div>
     </div>
 
     <!-- Footer -->
