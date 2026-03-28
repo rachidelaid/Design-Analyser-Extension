@@ -50,6 +50,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Running outside extension context — keep placeholder values
   }
 
+  // ── Tabs ────────────────────────
+  const tabsBtns = tabs.querySelectorAll(".segment-btn")
+  tabs.setAttribute("data-active", "0")
+
+  tabsBtns.forEach((btn, i) => {
+    btn.addEventListener("click", () => {
+      tabsBtns.forEach((b) => b.classList.remove("active"))
+      btn.classList.add("active")
+      tabs.setAttribute("data-active", String(i))
+      toast(`Tab: ${btn.dataset.value}`)
+    })
+  })
+
   // ── Color swatch copy ─────────────────────────────────────
   document.querySelectorAll(".color-swatch").forEach((swatch) => {
     swatch.addEventListener("click", () => {
