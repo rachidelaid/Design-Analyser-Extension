@@ -15,7 +15,7 @@ A Chrome extension that extracts the design system of any website (colors, typog
 - **Model selection** — choose between **GPT-4o mini** (fast, text-only) or **GPT-4o** (higher quality, includes a screenshot of the page for vision-based analysis)
 - **Screenshot capture** — when using GPT-4o, the extension captures the visible tab and sends it alongside the extracted data so the AI can see gradients, images, shadows, and visual hierarchy
 - **Analysis history** — stores past analyses in `chrome.storage` with one-click restore and a badge showing which model was used
-- **Copy & open** — copy the generated prompt or jump straight to v0.dev
+- **Copy** — copy the generated prompt
 - **Dark / light mode** — glassmorphism UI with theme persistence
 
 ## Project Structure
