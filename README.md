@@ -2,6 +2,12 @@
 
 A Chrome extension that extracts the design system of any website (colors, typography, layout, spacing, DOM structure, components) and uses OpenAI to generate a prompt you can paste into tools like v0, Bolt, or Cursor to recreate a similar site.
 
+## Screenshots
+
+| Analysis | History |
+|---|---|
+| ![Analysis panel](images/analyze.png) | ![History panel](images/history.png) |
+
 ## Features
 
 - **Design extraction** — automatically detects colors, fonts, layout type, grid system, spacing values, DOM structure, UI components, animations, and CSS custom properties from any page
