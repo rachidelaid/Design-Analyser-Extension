@@ -128,34 +128,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── Render extracted data into UI ─────────────────────────
   function renderResults(data) {
-    renderColors(data.colors || [])
+    renderColors(data.colorMap || [])
     renderTypography(data.typography || {})
     renderLayout(
       data.layout || {},
-      data.components || [],
-      data.interactions || [],
+      data.interactions || {},
+      data.sections || [],
     )
     const resultsEl = document.getElementById("results")
     resultsEl.classList.remove("hidden")
     resultsEl.classList.add("visible")
   }
 
-  function renderColors(colors) {
+  function renderColors(colorMap) {
     const container = document.getElementById("colorPalette")
-    const unique = [...new Set(colors)].filter(
-      (c) => c && c !== "rgba(0, 0, 0, 0)" && c !== "#rgba(0, 0, 0, 0)",
-    )
-    if (unique.length === 0) {
+    if (!colorMap.length) {
       container.innerHTML = '<span class="no-data">No colors detected</span>'
       return
     }
-    container.innerHTML = unique
+    container.innerHTML = colorMap
       .slice(0, 6)
       .map(
-        (hex) => `
-      <div class="color-swatch" data-color="${hex}">
-        <div class="swatch-fill" style="background:${hex}"></div>
-        <span class="swatch-label">${hex}</span>
+        (c) => `
+      <div class="color-swatch" data-color="${c.hex}" title="${c.roles.join(", ")}">
+        <div class="swatch-fill" style="background:${c.hex}"></div>
+        <span class="swatch-label">${c.hex}</span>
       </div>`,
       )
       .join("")
@@ -215,16 +212,30 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = html
   }
 
-  function renderLayout(layout, components, interactions) {
+  function renderLayout(layout, interactions, sections) {
     const container = document.getElementById("layoutInfo")
     const tags = []
 
-    if (layout.type) tags.push(layout.type)
+    if (layout.type) {
+      const short = layout.type.includes("multi-page") ? "multi-page" :
+        layout.type.includes("anchor") ? "single-page + anchors" : "single-page"
+      tags.push(short)
+    }
     if (layout.gridSystem) tags.push(layout.gridSystem)
     if (layout.hasNavigation) tags.push("navigation")
-    if (layout.sectionCount) tags.push(`${layout.sectionCount} sections`)
-    components.forEach((c) => tags.push(c))
-    interactions.forEach((i) => tags.push(i))
+    if (layout.containerWidth) tags.push(`max-width: ${layout.containerWidth}`)
+    if (sections.length) tags.push(`${sections.length} sections`)
+
+    const sectionTypes = new Set(sections.map((s) => s.purpose))
+    sectionTypes.forEach((p) => {
+      if (p !== "content section" && p !== "brief content block" && p !== "spacer/divider") {
+        tags.push(p)
+      }
+    })
+
+    if (interactions.transitions?.length) tags.push("transitions")
+    if (interactions.animations?.length) tags.push("animations")
+    if (interactions.transforms?.length) tags.push("transforms")
 
     if (tags.length === 0) {
       container.innerHTML =
@@ -381,10 +392,13 @@ document.addEventListener("DOMContentLoaded", () => {
             hour: "2-digit",
             minute: "2-digit",
           })
-          const colorDots = (entry.data.colors || [])
-            .filter((c) => c && c !== "rgba(0, 0, 0, 0)")
+          const colorSource = entry.data.colorMap || entry.data.colors || []
+          const colorDots = (Array.isArray(colorSource) ? colorSource : [])
             .slice(0, 4)
-            .map((c) => `<span class="hist-dot" style="background:${c}"></span>`)
+            .map((c) => {
+              const hex = typeof c === "string" ? c : c.hex
+              return hex ? `<span class="hist-dot" style="background:${hex}"></span>` : ""
+            })
             .join("")
           const domain = getDomain(entry.url)
           const hasPrompt = entry.prompt ? "has-prompt" : ""
