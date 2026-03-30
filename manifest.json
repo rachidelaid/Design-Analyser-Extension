@@ -1,7 +1,7 @@
 {
   "name": "Design Analyzer",
   "description": "Analyze the design of a website",
-  "version": "1.0",
+  "version": "1.1",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup/popup.html",
@@ -19,14 +19,29 @@
     "128": "images/icon128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background/main.js",
+    "type": "module"
   },
   "permissions": ["activeTab", "scripting", "clipboardWrite", "storage"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": [
+        "content/utils.js",
+        "content/extractors/identity.js",
+        "content/extractors/colors.js",
+        "content/extractors/typography.js",
+        "content/extractors/layout.js",
+        "content/extractors/sections.js",
+        "content/extractors/forms.js",
+        "content/extractors/interactions.js",
+        "content/extractors/images.js",
+        "content/extractors/assets.js",
+        "content/extractors/spacing.js",
+        "content/extractors/meta.js",
+        "content/main.js"
+      ],
       "run_at": "document_idle"
     }
   ]

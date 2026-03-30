@@ -15,14 +15,43 @@ A Chrome extension that extracts the design system of any website (colors, typog
 ## Project Structure
 
 ```
-├── manifest.json        # Chrome extension manifest (MV3)
-├── background.js        # Service worker — OpenAI API calls, prompt engineering
-├── content.js           # Content script — extracts design data from pages
-├── popup/
-│   ├── popup.html       # Extension popup markup
-│   ├── popup.css        # Styles (glassmorphism, dark/light themes)
-│   └── popup.js         # Popup logic, screenshot capture, UI rendering, history
-└── images/              # Extension icons (16/32/48/128px)
+├── manifest.json                     # Chrome extension manifest (MV3)
+├── background/                       # Service worker (ES modules)
+│   ├── main.js                       # Entry point — message listener
+│   ├── openai.js                     # OpenAI API client
+│   ├── formatter.js                  # Design data → structured text
+│   └── prompts.js                    # System prompt template
+├── content/                          # Content scripts (injected into pages)
+│   ├── utils.js                      # Shared utilities (rgbToHex, sampleElements)
+│   ├── main.js                       # Orchestrator + message listener
+│   └── extractors/                   # One file per extraction concern
+│       ├── identity.js               # Brand name, hero, OG metadata
+│       ├── colors.js                 # Color palette with roles
+│       ├── typography.js             # Fonts, sizes, weights + font sources
+│       ├── layout.js                 # Page type, grid system, container width
+│       ├── sections.js               # Section detection + purpose guessing
+│       ├── forms.js                  # Form fields + purpose detection
+│       ├── interactions.js           # Transitions, animations, transforms
+│       ├── images.js                 # Image roles + placeholder strategy
+│       ├── assets.js                 # Icon library, SVGs, videos, logos
+│       ├── spacing.js                # Component spacing values
+│       └── meta.js                   # Responsive, CSS variables, DOM structure
+├── popup/                            # Extension popup UI
+│   ├── popup.html                    # Markup
+│   ├── popup.css                     # Styles (glassmorphism, dark/light themes)
+│   └── js/                           # Popup logic (ES modules)
+│       ├── app.js                    # Entry point — wires all modules together
+│       ├── state.js                  # Shared state (lastAnalysis, lastPrompt)
+│       ├── utils.js                  # DOM helpers, escapeHtml, getDomain
+│       ├── toast.js                  # Toast notifications
+│       ├── theme.js                  # Dark/light theme toggle
+│       ├── settings.js               # API key + model selection panel
+│       ├── tabs.js                   # Analysis / History tab switching
+│       ├── renderer.js               # Render colors, typography, layout tags
+│       ├── prompt.js                 # Prompt loading/result/error UI + API call
+│       ├── history.js                # History list rendering + storage
+│       └── analyze.js                # Analysis orchestration + copy button
+└── images/                           # Extension icons (16/32/48/128px)
 ```
 
 ## Setup
@@ -43,11 +72,21 @@ A Chrome extension that extracts the design system of any website (colors, typog
 6. OpenAI generates a recreation prompt (GPT-4o also receives a screenshot for visual context)
 7. Click **Copy** to copy the prompt, then paste it into v0, Bolt, Cursor, or any AI tool
 
+## Architecture
+
+The codebase follows a **modular separation of concerns**:
+
+- **Content scripts** use the manifest `js` array for ordered loading (shared global scope, no ES modules) — each extractor is independent and testable
+- **Background service worker** uses ES modules (`"type": "module"`) for clean imports between API client, formatter, and prompt template
+- **Popup** uses ES modules via `<script type="module">` — each UI concern (theme, settings, history, analysis) is its own module
+
+Adding a new extractor is as simple as creating a file in `content/extractors/`, defining the function, adding it to the manifest's `js` array, and calling it from `content/main.js`.
+
 ## What Gets Extracted
 
 | Category | Details |
 |---|---|
-| Colors | Background, text, border, and accent colors (up to 8, filtered for relevance) |
+| Colors | Background, text, border, and accent colors (up to 12, filtered for relevance) |
 | Typography | Font families, sizes, weights, line-heights for H1, H2, and body text |
 | Layout | Page type, navigation presence, section count, grid system (grid/flexbox/block) |
 | Spacing | Padding, margin, and gap values sampled from containers |
